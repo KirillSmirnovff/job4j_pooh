@@ -9,19 +9,17 @@ public class QueueService implements Service {
 
     @Override
     public Resp process(Req req) {
-        Resp result = null;
+        Resp result = new Resp("", Resp.ERROR);
         if ("POST".equals(req.httpRequestType())) {
             map.putIfAbsent(req.getSourceName(), new ConcurrentLinkedQueue<>());
             map.get(req.getSourceName()).add(req.getParam());
-        }
-        if ("GET".equals(req.httpRequestType())) {
+            result = new Resp("", Resp.SUCCESS);
+        } else if ("GET".equals(req.httpRequestType())) {
             result = new Resp("", Resp.NODATA);
-            ConcurrentLinkedQueue<String> queue = map.get(req.getSourceName());
-            if (queue != null) {
-                String param = queue.poll();
-                if (param != null) {
-                    result = new Resp(param, Resp.SUCCESS);
-                }
+            ConcurrentLinkedQueue<String> queue = map.getOrDefault(req.getSourceName(), new ConcurrentLinkedQueue<>());
+            String param = queue.poll();
+            if (param != null) {
+                result = new Resp(param, Resp.SUCCESS);
             }
         }
         return result;

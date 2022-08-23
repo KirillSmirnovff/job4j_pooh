@@ -9,25 +9,25 @@ public class TopicService implements Service {
 
     @Override
     public Resp process(Req req) {
-        Resp result = null;
+        Resp result = new Resp("", Resp.ERROR);
         if ("POST".equals(req.httpRequestType())) {
-            for (ConcurrentHashMap<String, ConcurrentLinkedQueue<String>> client : map.values()) {
-                client.putIfAbsent(req.getSourceName(), new ConcurrentLinkedQueue<>());
-                client.get(req.getSourceName()).add(req.getParam());
+            ConcurrentHashMap<String, ConcurrentLinkedQueue<String>> topicMap = map.get(req.getSourceName());
+            if (topicMap != null) {
+                for (ConcurrentLinkedQueue<String> client : topicMap.values()) {
+                    client.add(req.getParam());
+                }
+                result = new Resp("", Resp.SUCCESS);
             }
-        }
-        if ("GET".equals(req.httpRequestType())) {
+        } else if ("GET".equals(req.httpRequestType())) {
             result = new Resp("", Resp.NODATA);
             String client = req.getParam();
             String topic = req.getSourceName();
-            if (map.putIfAbsent(client, new ConcurrentHashMap<>()) != null) {
-                ConcurrentLinkedQueue<String> queue = map.get(client).putIfAbsent(topic, new ConcurrentLinkedQueue<>());
-                if (queue != null) {
-                    String param = queue.poll();
-                    if (param != null) {
-                        result = new Resp(param, Resp.SUCCESS);
-                    }
-                }
+            map.putIfAbsent(topic, new ConcurrentHashMap<>());
+            map.get(topic).putIfAbsent(client, new ConcurrentLinkedQueue<>());
+            ConcurrentLinkedQueue<String> clientQueue = map.get(topic).get(client);
+            String param = clientQueue.poll();
+            if (param != null) {
+                result = new Resp(param, Resp.SUCCESS);
             }
         }
         return result;

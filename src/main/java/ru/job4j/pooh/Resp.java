@@ -4,6 +4,7 @@ public class Resp {
 
     static final String SUCCESS = "200";
     static final String NODATA = "204";
+    static final String ERROR = "501";
     private final String text;
     private final String status;
 
